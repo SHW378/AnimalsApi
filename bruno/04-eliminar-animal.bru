@@ -1,0 +1,23 @@
+meta {
+  name: Eliminar animal
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/animals/{{animalId}}
+  body: none
+  auth: none
+}
+
+script:post-response {
+  if (res.getStatus() === 204) {
+    bru.setVar("animalDeleted", true);
+  }
+}
+
+tests {
+  test("responde 204 No Content", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

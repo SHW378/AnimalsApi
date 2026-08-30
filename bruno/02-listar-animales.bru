@@ -1,0 +1,61 @@
+meta {
+  name: Listar animales
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/animals
+  body: none
+  auth: none
+}
+
+tests {
+  test("responde 200 OK", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devuelve un arreglo con la estructura esperada", function () {
+    const animals = res.getBody();
+
+    expect(animals).to.be.an("array");
+
+    animals.forEach(function (animal) {
+      expect(animal).to.include.all.keys(
+        "id",
+        "nombre",
+        "especie",
+        "raza",
+        "edad",
+        "peso"
+      );
+      expect(animal.id).to.be.a("number");
+      expect(animal.nombre).to.be.a("string");
+      expect(animal.especie).to.be.a("string");
+      expect(animal.edad).to.be.a("number");
+      expect(animal.peso).to.be.a("number");
+      expect(
+        animal.raza === null || typeof animal.raza === "string"
+      ).to.equal(true);
+    });
+  });
+
+  test("refleja si el animal existe o ya fue eliminado", function () {
+    const animals = res.getBody();
+    const storedId = bru.getVar("animalId");
+
+    if (storedId !== undefined && storedId !== null && storedId !== "") {
+      const animalId = Number(storedId);
+      const exists = animals.some(function (animal) {
+        return animal.id === animalId;
+      });
+      const deleted = bru.getVar("animalDeleted");
+
+      if (deleted === true || deleted === "true") {
+        expect(exists).to.equal(false);
+      } else {
+        expect(exists).to.equal(true);
+      }
+    }
+  });
+}

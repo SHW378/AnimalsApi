@@ -1,0 +1,51 @@
+meta {
+  name: Crear animal
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/animals
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "nombre": "Luna",
+    "especie": "Canis lupus",
+    "raza": null,
+    "edad": 4,
+    "peso": 24.5
+  }
+}
+
+script:post-response {
+  const animal = res.getBody();
+
+  if (res.getStatus() === 201 && animal && animal.id !== undefined) {
+    bru.setVar("animalId", animal.id);
+    bru.setVar("animalDeleted", false);
+  }
+}
+
+tests {
+  test("responde 201 Created", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("devuelve el animal creado con id autogenerado", function () {
+    const animal = res.getBody();
+
+    expect(animal.id).to.be.a("number");
+    expect(animal.nombre).to.equal("Luna");
+    expect(animal.especie).to.equal("Canis lupus");
+    expect(animal.raza).to.equal(null);
+    expect(animal.edad).to.equal(4);
+    expect(animal.peso).to.equal(24.5);
+  });
+}

@@ -1,0 +1,44 @@
+services:
+  api:
+    build:
+      context: .
+      target: production
+    container_name: animals-api
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-animals_user}
+      DB_PASSWORD: ${DB_PASSWORD:-animals_password}
+      DB_NAME: ${DB_NAME:-animals_db}
+      DB_TYPE: postgres
+    ports:
+      - "${PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: animals-api-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-animals_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-animals_password}
+      POSTGRES_DB: ${DB_NAME:-animals_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - animals_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-animals_user} -d ${DB_NAME:-animals_db}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  animals_postgres_data:

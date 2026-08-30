@@ -1,0 +1,40 @@
+meta {
+  name: Actualizar animal
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/animals/{{animalId}}
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+}
+
+body:json {
+  {
+    "nombre": "Luna actualizada",
+    "edad": 5,
+    "peso": 25.2
+  }
+}
+
+tests {
+  test("responde 200 OK", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("actualiza solo los campos enviados", function () {
+    const animal = res.getBody();
+
+    expect(animal.id).to.equal(Number(bru.getVar("animalId")));
+    expect(animal.nombre).to.equal("Luna actualizada");
+    expect(animal.edad).to.equal(5);
+    expect(animal.peso).to.equal(25.2);
+    expect(animal.especie).to.equal("Canis lupus");
+    expect(animal.raza).to.equal(null);
+  });
+}
