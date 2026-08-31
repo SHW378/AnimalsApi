@@ -1,46 +1,50 @@
 # Animals API
 
-API REST desarrollada con NestJS, TypeORM y PostgreSQL para administrar una
-colección de animales. El proyecto implementa exactamente cuatro endpoints para
-crear, listar, actualizar y eliminar registros.
-
-Repositorio: <https://github.com/SHW378/AnimalsApi>
+API REST para registrar y administrar animales mediante operaciones CRUD. Está
+desarrollada con NestJS y almacena la información en PostgreSQL usando TypeORM.
 
 ## Tecnologías
 
 - Node.js 22
 - NestJS 11
+- TypeScript
 - TypeORM
 - PostgreSQL 16
 - Docker y Docker Compose
-- class-validator
-- Jest y Supertest
+- class-validator y class-transformer
 - Bruno
 
-## Modelo de datos
+## Características
 
-| Campo     | Tipo                         | Descripción                         |
-| --------- | ---------------------------- | ----------------------------------- |
-| `id`      | number, PK autogenerada      | Identificador único                 |
-| `nombre`  | string, requerido            | Nombre del animal                   |
-| `especie` | string, requerido            | Especie, por ejemplo `Canis lupus`  |
-| `raza`    | string o null, opcional      | Raza, cuando aplica                 |
-| `edad`    | number entero, mínimo 0      | Edad en años                        |
-| `peso`    | number positivo              | Peso en kilogramos                  |
+- Creación, consulta, actualización y eliminación de animales.
+- Persistencia en PostgreSQL.
+- Migraciones de base de datos con TypeORM.
+- Validación de solicitudes mediante DTOs.
+- Rechazo de propiedades no definidas en los DTOs.
+- Respuestas `404 Not Found` al actualizar o eliminar registros inexistentes.
+- Campo `raza` opcional y nullable.
+- Entorno reproducible con Docker Compose.
+- Colección de Bruno incluida.
 
-La tabla se crea mediante una migración. TypeORM tiene deshabilitada la
-sincronización automática (`synchronize: false`).
+## Modelo Animal
+
+| Campo     | Tipo                    | Descripción                        |
+| --------- | ----------------------- | ---------------------------------- |
+| `id`      | number, autogenerado    | Identificador único                |
+| `nombre`  | string                  | Nombre del animal                  |
+| `especie` | string                  | Especie, por ejemplo `Canis lupus` |
+| `raza`    | string o null, opcional | Raza del animal cuando aplica      |
+| `edad`    | number entero           | Edad en años, mínimo `0`           |
+| `peso`    | number                  | Peso en kilogramos, mayor que `0`  |
 
 ## Endpoints
 
-| Método   | Ruta           | Código exitoso | Operación                    |
-| -------- | -------------- | -------------- | ---------------------------- |
-| `POST`   | `/animals`     | `201`          | Crear un animal              |
-| `GET`    | `/animals`     | `200`          | Listar todos los animales    |
-| `PATCH`  | `/animals/:id` | `200`          | Actualizar campos del animal |
-| `DELETE` | `/animals/:id` | `204`          | Eliminar un animal           |
-
-No se expone `GET /animals/:id`, de acuerdo con el alcance de cuatro endpoints.
+| Método   | Ruta           | Respuesta | Función                       |
+| -------- | -------------- | --------- | ----------------------------- |
+| `POST`   | `/animals`     | `201`     | Crear un animal               |
+| `GET`    | `/animals`     | `200`     | Consultar todos los animales  |
+| `PATCH`  | `/animals/:id` | `200`     | Actualizar un animal          |
+| `DELETE` | `/animals/:id` | `204`     | Eliminar un animal            |
 
 ### Crear un animal
 
@@ -54,12 +58,12 @@ No se expone `GET /animals/:id`, de acuerdo con el alcance de cuatro endpoints.
 }
 ```
 
-`raza` puede enviarse como un string, como `null`, o puede omitirse. Cuando se
-omite al crear el registro, se guarda como `null`.
+`raza` puede enviarse como string, como `null` o puede omitirse.
 
 ### Actualizar un animal
 
-`PATCH` permite enviar únicamente los campos que deben cambiar:
+La actualización es parcial, por lo que solo se envían los campos que deben
+cambiar:
 
 ```json
 {
@@ -69,42 +73,58 @@ omite al crear el registro, se guarda como `null`.
 }
 ```
 
-La API devuelve `400 Bad Request` cuando los datos no cumplen el DTO o se envían
-propiedades desconocidas. `PATCH` y `DELETE` devuelven `404 Not Found` cuando el
-identificador no existe.
+## Montaje con Docker
 
-## Ejecución con Docker
+Requisitos:
 
-Esta es la forma recomendada porque no requiere instalar PostgreSQL manualmente.
+- Docker Desktop
+- Docker Compose
+
+Levantar PostgreSQL, ejecutar las migraciones e iniciar la API:
 
 ```bash
-git clone https://github.com/SHW378/AnimalsApi.git
-cd AnimalsApi
-docker compose up --build
+docker compose up --build -d
 ```
 
-Docker Compose realiza lo siguiente:
+La API estará disponible en:
 
-1. Crea PostgreSQL y espera hasta que esté saludable.
-2. Construye la API.
-3. Ejecuta las migraciones pendientes.
-4. Inicia NestJS en `http://localhost:3000`.
+```text
+http://localhost:3000
+```
 
-Para detener los servicios:
+Consultar el estado de los contenedores:
+
+```bash
+docker compose ps
+```
+
+Consultar los logs de la API:
+
+```bash
+docker compose logs api
+```
+
+Detener los servicios:
 
 ```bash
 docker compose down
 ```
 
-## Ejecución local
+## Montaje local
 
-Requisitos: Node.js 20 o superior, npm y una instancia de PostgreSQL.
+Requisitos:
+
+- Node.js 20 o superior
+- npm
+- PostgreSQL
+
+Instalar las dependencias:
 
 ```bash
 npm install
 ```
 
-Copiar `.env.example` como `.env` y ajustar las credenciales si es necesario:
+Crear `.env` a partir de `.env.example`:
 
 ```env
 PORT=3000
@@ -116,7 +136,7 @@ DB_NAME=animals_db
 DB_TYPE=postgres
 ```
 
-Después, ejecutar la migración e iniciar la API:
+Ejecutar las migraciones e iniciar la aplicación:
 
 ```bash
 npm run migration:run
@@ -125,71 +145,47 @@ npm run start:dev
 
 ## Migraciones
 
+Ejecutar las migraciones pendientes:
+
 ```bash
-# Ejecutar migraciones pendientes
 npm run migration:run
+```
 
-# Revertir la migración más reciente
+Revertir la migración más reciente:
+
+```bash
 npm run migration:revert
+```
 
-# Generar una migración después de modificar las entidades
+Generar una migración después de modificar una entidad:
+
+```bash
 npm run migration:generate -- src/db/migrations/NombreMigracion
 ```
 
-La migración inicial está en
-`src/db/migrations/1788048000000-CreateAnimalTable.ts` e incluye las
-restricciones `edad >= 0` y `peso > 0`.
-
-## Pruebas automatizadas
-
-```bash
-npm run build
-npm run lint
-npm test
-npm run test:e2e
-```
-
-Las pruebas unitarias cubren el servicio, incluidos los casos inexistentes. Las
-pruebas HTTP cubren los cuatro endpoints y la validación de los DTOs.
+La configuración utiliza `synchronize: false`, por lo que la estructura de la
+base de datos se administra exclusivamente mediante migraciones.
 
 ## Colección de Bruno
 
-La colección se encuentra en [`bruno`](./bruno) y contiene exactamente estas
-cuatro solicitudes:
+La carpeta `bruno` contiene cuatro solicitudes:
 
-1. `Crear animal`
-2. `Listar animales`
-3. `Actualizar animal`
-4. `Eliminar animal`
+1. Crear animal.
+2. Listar animales.
+3. Actualizar animal.
+4. Eliminar animal.
 
-Para usarla:
+Para utilizarla:
 
 1. Abrir Bruno.
 2. Seleccionar **Open Collection**.
-3. Elegir la carpeta `bruno` de este repositorio.
+3. Abrir la carpeta `bruno`.
 4. Seleccionar el ambiente `local`.
 5. Ejecutar las solicitudes en el orden indicado.
 
-La solicitud de creación guarda automáticamente el `id` devuelto en la variable
-de ejecución `animalId`. Las solicitudes de actualización y eliminación usan esa
-misma variable, por lo que no es necesario copiar el identificador manualmente.
-Cada solicitud incluye pruebas de respuesta.
-
-Después de eliminar, se puede ejecutar nuevamente `Listar animales` para
-confirmar que el registro ya no aparece. Esto reutiliza el mismo endpoint y no
-añade una quinta ruta a la API.
-
-## Guion sugerido para el video
-
-1. Mostrar el repositorio y la estructura del módulo `animals`.
-2. Ejecutar `docker compose up --build` y mostrar que la migración finaliza.
-3. Abrir la colección en Bruno y seleccionar el ambiente `local`.
-4. Ejecutar `Crear animal` y mostrar el código `201`, el `id` y `raza: null`.
-5. Ejecutar `Listar animales` y localizar el registro creado.
-6. Ejecutar `Actualizar animal` y mostrar los campos modificados.
-7. Ejecutar `Eliminar animal` y mostrar el código `204` sin cuerpo.
-8. Ejecutar otra vez `Listar animales` para confirmar que fue eliminado.
-9. Mostrar que las pruebas incluidas en Bruno aparecen aprobadas.
+El identificador generado por `POST /animals` se guarda automáticamente en la
+variable `animalId` y se utiliza en las solicitudes de actualización y
+eliminación.
 
 ## Estructura principal
 
